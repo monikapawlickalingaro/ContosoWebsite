@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report User Trainer — Artificial Intelligence Sample</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="app">
+
+    <!-- ── REPORT ── -->
+    <main class="report-container">
+      <!--
+        Wklej tu URL z Power BI: File → Embed report → Publish to web.
+        Użyj wartości src z wygenerowanego <iframe>, np.:
+        https://app.powerbi.com/view?r=eyJrIjoi...
+      -->
+      <iframe
+        id="report-frame"
+        title="Artificial Intelligence Sample — Power BI report"
+        src="POWERBI_EMBED_URL"
+        frameborder="0"
+        allowfullscreen="true">
+      </iframe>
+    </main>
+
+    <!-- ── AGENT PANEL ── -->
+    <aside class="agent-panel" id="agent-panel">
+      <header class="agent-header">
+        <div class="agent-title">
+          <span class="agent-dot" id="agent-status-dot" aria-hidden="true"></span>
+          <div>
+            <h1>Report Trainer</h1>
+            <p id="agent-status-text">Voice guide for this report</p>
+          </div>
+        </div>
+        <button class="panel-toggle" id="panel-toggle" aria-expanded="true"
+                aria-controls="agent-body" title="Collapse panel">⟩</button>
+      </header>
+
+      <div class="agent-body" id="agent-body">
+        <section class="agent-hint">
+          <h2>Ask me things like</h2>
+          <ul>
+            <li>"What does the Key Influencers page show?"</li>
+            <li>"Why can't I see open opportunities?"</li>
+            <li>"How do I change the date range?"</li>
+          </ul>
+        </section>
+
+        <!--
+          ElevenLabs Conversational AI widget.
+          Podmień AGENT_ID na ID agenta z dashboardu ElevenLabs
+          (Conversational AI → agent → Embed).
+        -->
+        <div class="agent-widget">
+          <elevenlabs-convai agent-id="ELEVENLABS_AGENT_ID"></elevenlabs-convai>
+        </div>
+
+        <!-- Human trainer escalation — revealed by the agent's tool call -->
+        <section class="handoff" id="handoff" hidden>
+          <h2>Ask a human trainer</h2>
+          <p class="handoff-q" id="handoff-question"></p>
+          <label class="handoff-label" for="handoff-email">Your email</label>
+          <input class="handoff-input" id="handoff-email" type="email"
+                 placeholder="name@company.com" autocomplete="email">
+          <button class="handoff-send" id="handoff-send">Send to trainer</button>
+          <p class="handoff-done" id="handoff-done" hidden>
+            Sent. A trainer will follow up by email.
+          </p>
+        </section>
+
+        <footer class="agent-footer">
+          <p class="agent-user" id="agent-user" hidden>
+            Signed in as <strong id="agent-user-name"></strong> ·
+            <a href="/logout">Sign out</a>
+          </p>
+          <p>This guide explains the report's structure — it does not read live data.</p>
+        </footer>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ElevenLabs embed script -->
+  <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

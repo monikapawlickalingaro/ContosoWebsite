@@ -1,0 +1,272 @@
+/* ─────────────────────────────────────────────
+   Report User Trainer — widget shell
+   Neutral palette designed to sit next to a
+   default Power BI theme without clashing.
+   ───────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #F3F2F1;            /* Power BI Service canvas grey */
+  --panel: #FFFFFF;
+  --border: #E1DFDD;
+  --text: #252423;          /* Fluent neutral primary */
+  --text-sec: #605E5C;
+  --text-muted: #A19F9D;
+  --accent: #118DFF;        /* Power BI blue */
+  --accent-soft: #E5F2FF;
+  --radius: 10px;
+  --panel-width: 340px;
+  --header-h: 56px;
+}
+
+html, body { height: 100%; }
+
+body {
+  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+/* ── LAYOUT ── */
+.app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+.report-container {
+  flex: 1;
+  min-width: 0;               /* lets the iframe shrink properly in flex */
+  padding: 12px 0 12px 12px;
+}
+
+.report-container iframe {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  display: block;
+}
+
+/* ── AGENT PANEL ── */
+.agent-panel {
+  width: var(--panel-width);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  margin: 12px 12px 12px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: width 0.25s ease;
+}
+
+.agent-panel.collapsed { width: 56px; }
+.agent-panel.collapsed .agent-body,
+.agent-panel.collapsed .agent-title div { display: none; }
+.agent-panel.collapsed .panel-toggle { transform: rotate(180deg); }
+
+/* header */
+.agent-header {
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px 0 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.agent-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.agent-title h1 {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.agent-title p {
+  font-size: 11px;
+  color: var(--text-sec);
+  white-space: nowrap;
+}
+
+.agent-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.panel-toggle {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text-sec);
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  transition: transform 0.25s ease, background 0.15s;
+  flex-shrink: 0;
+}
+.panel-toggle:hover { background: var(--bg); }
+.panel-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* body */
+.agent-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+.agent-hint h2 {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.agent-hint ul { list-style: none; }
+
+.agent-hint li {
+  font-size: 13px;
+  color: var(--text-sec);
+  line-height: 1.5;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 6px;
+}
+
+/* widget area — the ElevenLabs component renders its own UI here */
+.agent-widget {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+}
+
+/* ── HUMAN TRAINER HANDOFF ── */
+.handoff {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.handoff h2 {
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.handoff-q {
+  font-size: 12px;
+  color: var(--text-sec);
+  font-style: italic;
+  line-height: 1.4;
+  margin-bottom: 10px;
+}
+
+.handoff-label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-sec);
+  margin-bottom: 4px;
+}
+
+.handoff-input {
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.handoff-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.handoff-send {
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+.handoff-send:hover { filter: brightness(1.08); }
+.handoff-send:disabled { opacity: 0.5; cursor: default; }
+.handoff-send:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+.handoff-done {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 500;
+  margin-top: 8px;
+}
+
+.agent-user {
+  margin-bottom: 8px;
+}
+.agent-user a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.agent-user a:hover { text-decoration: underline; }
+
+.agent-footer p {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+/* ── RESPONSIVE ──
+   Below tablet width the panel moves under the report. */
+@media (max-width: 860px) {
+  body { overflow: auto; }
+  .app { flex-direction: column; height: auto; }
+  .report-container { padding: 12px; height: 60vh; }
+  .agent-panel {
+    width: auto;
+    margin: 0 12px 12px;
+  }
+  .agent-panel.collapsed { width: auto; }
+  .agent-panel.collapsed .agent-body { display: none; }
+  .agent-panel.collapsed .agent-title div { display: block; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-panel, .panel-toggle { transition: none; }
+}
