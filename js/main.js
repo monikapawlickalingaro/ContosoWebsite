@@ -20,16 +20,43 @@
     anomaly_detection:  "ReportSection909ea50e7939156807d6"
   };
 
-  function navigateToPage(params) {
+   function navigateToPage(params) {
     const pageId = REPORT_PAGES[params.page];
     if (!pageId) {
       console.warn("[Report Trainer] Unknown page:", params.page);
       return "Error: that page is not configured on this site.";
     }
+
     const base = reportFrame.src.split("&pageName=")[0];
-    reportFrame.src = base + "&pageName=" + pageId;
-    return "Done. The " + params.page.replace(/_/g, " ") +
-           " page is now loading in the report.";
+    const pageLabel = params.page.replace(/_/g, " ");
+
+    /* Resolve only once the iframe has actually rendered — otherwise the agent
+       starts describing a page the user can't see yet. */
+    return new Promise(function (resolve) {
+      let settled = false;
+
+      function done(msg) {
+        if (settled) return;
+        settled = true;
+        reportFrame.removeEventListener("load", onLoad);
+        resolve(msg);
+      }
+
+      function onLoad() {
+        /* Power BI still paints for a moment after the iframe 'load' event. */
+        setTimeout(function () {
+          done("Done. The " + pageLabel + " page is now visible in the report.");
+        }, 1200);
+      }
+
+      reportFrame.addEventListener("load", onLoad);
+      reportFrame.src = base + "&pageName=" + pageId;
+
+      /* Safety net: never hang the agent if the report is slow or blocked. */
+      setTimeout(function () {
+        done("The " + pageLabel + " page is opening — it may take a moment.");
+      }, 8000);
+    });
   }
 
   /* ── 2. Client tool: escalate to a human trainer ──
