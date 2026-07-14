@@ -120,18 +120,35 @@ if (HANDOFF_WEBHOOK) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          "@type": "MessageCard",
-          "@context": "http://schema.org/extensions",
-          "summary": "Question for a human trainer",
-          "themeColor": "118DFF",
-          "title": "Question for a human trainer",
-          "sections": [{
-            "facts": [
-              { "name": "Question", "value": pendingQuestion || "(not captured)" },
-              { "name": "Email", "value": email },
-              { "name": "Report", "value": "Artificial Intelligence Sample" }
-            ]
-          }]
+          "type": "message",
+          "attachments": [
+            {
+              "contentType": "application/vnd.microsoft.card.adaptive",
+              "contentUrl": null,
+              "content": {
+                "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                "type": "AdaptiveCard",
+                "version": "1.2",
+                "body": [
+                  {
+                    "type": "TextBlock",
+                    "text": "Question for a human trainer",
+                    "weight": "Bolder",
+                    "size": "Medium",
+                    "wrap": true
+                  },
+                  {
+                    "type": "FactSet",
+                    "facts": [
+                      { "title": "Question", "value": pendingQuestion || "(not captured)" },
+                      { "title": "Email", "value": email },
+                      { "title": "Report", "value": "Artificial Intelligence Sample" }
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
         })
       })
       .then(function (r) {
