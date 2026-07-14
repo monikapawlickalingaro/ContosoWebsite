@@ -8,83 +8,46 @@
 </head>
 <body>
 
-  <div class="app">
+  <!-- ── REPORT (full width) ── -->
+  <main class="report-container">
+    <iframe
+      id="report-frame"
+      title="Artificial Intelligence Sample — Power BI report"
+      src="https://app.powerbi.com/reportEmbed?reportId=d724f3b0-8c9e-454d-8c54-30a245b070ba&autoAuth=true&ctid=2ee548e1-6be8-4729-b86e-f482e29d2c9f"
+      frameborder="0"
+      allowfullscreen="true">
+    </iframe>
+  </main>
 
-    <!-- ── REPORT ── -->
-    <main class="report-container">
-      <!--
-        Wklej tu URL z Power BI: File → Embed report.
-        Użyj wartości src z wygenerowanego <iframe>, np.:
-        https://app.powerbi.com/view?r=eyJrIjoi...
-      -->
-      <iframe
-        id="report-frame"
-        title="Artificial Intelligence Sample — Power BI report"
-        src="https://app.powerbi.com/reportEmbed?reportId=d724f3b0-8c9e-454d-8c54-30a245b070ba&autoAuth=true&ctid=2ee548e1-6be8-4729-b86e-f482e29d2c9f"
-        frameborder="0"
-        allowfullscreen="true">
-      </iframe>
-    </main>
+  <!-- ── ELEVENLABS WIDGET (floating, bottom-right) ── -->
+  <elevenlabs-convai agent-id="agent_1401kx60pvr1f7t8sbr2tvpe0pds"></elevenlabs-convai>
 
-    <!-- ── AGENT PANEL ── -->
-    <aside class="agent-panel" id="agent-panel">
-      <header class="agent-header">
-        <div class="agent-title">
-          <span class="agent-dot" id="agent-status-dot" aria-hidden="true"></span>
-          <div>
-            <h1>Report Trainer</h1>
-            <p id="agent-status-text">Voice guide for this report</p>
-          </div>
-        </div>
-        <button class="panel-toggle" id="panel-toggle" aria-expanded="true"
-                aria-controls="agent-body" title="Collapse panel">⟩</button>
-      </header>
+  <!-- ── HUMAN TRAINER ESCALATION (modal, opened by the agent's tool call) ── -->
+  <div class="modal-backdrop" id="handoff" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="handoff-title">
+      <button class="modal-close" id="handoff-close" title="Close">&times;</button>
+      <h2 id="handoff-title">Ask a human trainer</h2>
+      <p class="handoff-lead">
+        Leave your email and a trainer will follow up on this question.
+      </p>
+      <p class="handoff-q" id="handoff-question"></p>
 
-      <div class="agent-body" id="agent-body">
-        <section class="agent-hint">
-          <h2>Ask me things like</h2>
-          <ul>
-            <li>"What does the Key Influencers page show?"</li>
-            <li>"Why can't I see open opportunities?"</li>
-            <li>"How do I change the date range?"</li>
-          </ul>
-        </section>
+      <label class="handoff-label" for="handoff-email">Your email</label>
+      <input class="handoff-input" id="handoff-email" type="email"
+             placeholder="name@company.com" autocomplete="email">
+      <button class="handoff-send" id="handoff-send">Send to trainer</button>
 
-        <!--
-          ElevenLabs Conversational AI widget.
-          Podmień AGENT_ID na ID agenta z dashboardu ElevenLabs
-          (Conversational AI → agent → Embed).
-        -->
-        <div class="agent-widget">
-          <elevenlabs-convai agent-id="agent_1401kx60pvr1f7t8sbr2tvpe0pds"></elevenlabs-convai>
-        </div>
-
-        <!-- Human trainer escalation — revealed by the agent's tool call -->
-        <section class="handoff" id="handoff" hidden>
-          <h2>Ask a human trainer</h2>
-          <p class="handoff-q" id="handoff-question"></p>
-          <label class="handoff-label" for="handoff-email">Your email</label>
-          <input class="handoff-input" id="handoff-email" type="email"
-                 placeholder="name@company.com" autocomplete="email">
-          <button class="handoff-send" id="handoff-send">Send to trainer</button>
-          <p class="handoff-done" id="handoff-done" hidden>
-            Sent. A trainer will follow up by email.
-          </p>
-        </section>
-
-        <footer class="agent-footer">
-          <p class="agent-user" id="agent-user" hidden>
-            Signed in as <strong id="agent-user-name"></strong> ·
-            <a href="/logout">Sign out</a>
-          </p>
-          <p>This guide explains the report's structure — it does not read live data.</p>
-        </footer>
-      </div>
-    </aside>
-
+      <p class="handoff-done" id="handoff-done" hidden>
+        Sent. A trainer will follow up by email.
+      </p>
+    </div>
   </div>
 
-  <!-- ElevenLabs embed script -->
+  <!-- Signed-in user badge (Azure Static Web Apps only) -->
+  <div class="user-badge" id="agent-user" hidden>
+    <span id="agent-user-name"></span> &middot; <a href="/logout">Sign out</a>
+  </div>
+
   <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
   <script src="js/main.js"></script>
 </body>
