@@ -63,7 +63,7 @@
      Set HANDOFF_WEBHOOK to a Teams / Slack / n8n endpoint that accepts a
      JSON POST. Left empty, the form still works and logs to the console. */
 
-  const HANDOFF_WEBHOOK = "";
+  const HANDOFF_WEBHOOK = "https://default2ee548e16be84729b86ef482e29d2c.9f.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/7489e901e76343e29e95abf04e6365b1/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=XoG79qCssRQ6h9S-bxnHk7MXmRbw71WQKEcHGvYbIYA";
 
   const handoff = document.getElementById("handoff");
   const handoffQuestion = document.getElementById("handoff-question");
@@ -115,11 +115,31 @@
     /* Every escalation is a gap in the knowledge base — worth logging. */
     console.info("[Report Trainer] Escalation to human trainer:", payload);
 
-    if (HANDOFF_WEBHOOK) {
+if (HANDOFF_WEBHOOK) {
       fetch(HANDOFF_WEBHOOK, {
         method: "POST",
+        mode: "no-cors",                    /* Power Automate sends no CORS headers */
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          type: "message",
+          attachments: [{
+            contentType: "application/vnd.microsoft.card.adaptive",
+            content: {
+              type: "AdaptiveCard",
+              $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
+              version: "1.4",
+              body: [
+                { type: "TextBlock", text: "Question for a human trainer",
+                  weight: "Bolder", size: "Medium" },
+                { type: "FactSet", facts: [
+                  { title: "Question:", value: pendingQuestion || "(not captured)" },
+                  { title: "Email:", value: email },
+                  { title: "Report:", value: "Artificial Intelligence Sample" }
+                ]}
+              ]
+            }
+          }]
+        })
       }).catch(function (err) {
         console.error("[Report Trainer] Escalation webhook failed:", err);
       });
