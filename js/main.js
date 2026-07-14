@@ -63,7 +63,7 @@
      Set HANDOFF_WEBHOOK to a Teams / Slack / n8n endpoint that accepts a
      JSON POST. Left empty, the form still works and logs to the console. */
 
-  const HANDOFF_WEBHOOK = "https://default2ee548e16be84729b86ef482e29d2c.9f.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/7489e901e76343e29e95abf04e6365b1/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=XoG79qCssRQ6h9S-bxnHk7MXmRbw71WQKEcHGvYbIYA";
+  const HANDOFF_WEBHOOK = "https://default2ee548e16be84729b86ef482e29d2c.9f.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/451e4aab07094a5ba18a85afd0a8085d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=t-qqVgWweRwYRrjYD0tI4Ipf-Da7W4eKc2bO5MNOzlk";
 
   const handoff = document.getElementById("handoff");
   const handoffQuestion = document.getElementById("handoff-question");
