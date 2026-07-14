@@ -46,7 +46,7 @@
         /* Power BI still paints for a moment after the iframe 'load' event. */
         setTimeout(function () {
           done("Done. The " + pageLabel + " page is now visible in the report.");
-        }, 1200);
+        }, 2000);
       }
 
       reportFrame.addEventListener("load", onLoad);
