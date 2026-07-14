@@ -118,7 +118,6 @@
 if (HANDOFF_WEBHOOK) {
       fetch(HANDOFF_WEBHOOK, {
         method: "POST",
-        mode: "no-cors",                    /* Power Automate sends no CORS headers */
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "message",
@@ -140,8 +139,12 @@ if (HANDOFF_WEBHOOK) {
             }
           }]
         })
-      }).catch(function (err) {
-        console.error("[Report Trainer] Escalation webhook failed:", err);
+      })
+      .then(function (r) {
+        console.info("[Report Trainer] Webhook response:", r.status, r.statusText);
+      })
+      .catch(function (err) {
+        console.error("[Report Trainer] Webhook failed:", err);
       });
     }
 
