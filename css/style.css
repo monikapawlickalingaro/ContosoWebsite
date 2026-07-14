@@ -270,3 +270,24 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .agent-panel, .panel-toggle { transition: none; }
 }
+
+/* ── ELEVENLABS WIDGET — force inline, not floating ──
+   The widget ships as position:fixed bottom-right.
+   Override so it renders inside our panel. */
+elevenlabs-convai {
+  position: static !important;
+  inset: auto !important;
+  bottom: auto !important;
+  right: auto !important;
+  left: auto !important;
+  top: auto !important;
+  width: 100% !important;
+  display: block !important;
+  z-index: auto !important;
+}
+
+.agent-widget {
+  display: block;          /* was flex/center — let the widget fill it */
+  align-items: initial;
+  justify-content: initial;
+}
