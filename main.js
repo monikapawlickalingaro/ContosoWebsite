@@ -51,9 +51,9 @@
      "ReportSection..." part from the end of the browser URL. */
 
   const REPORT_PAGES = {
-    key_influencers:   "REPORTSECTION_ID_1",
-    decomposition_tree: "REPORTSECTION_ID_2",
-    anomaly_detection: "REPORTSECTION_ID_3"
+    key_influencers:    "ReportSection76c409e0c333d60bb1e2",
+    decomposition_tree: "ReportSectionacd41c847407a998c130",
+    anomaly_detection:  "ReportSection909ea50e7939156807d6"
   };
 
   function navigateToPage(params) {
