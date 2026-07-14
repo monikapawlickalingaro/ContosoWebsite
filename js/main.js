@@ -120,10 +120,18 @@ if (HANDOFF_WEBHOOK) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: "**Question for a human trainer**\n\n" +
-                "**Question:** " + (pendingQuestion || "(not captured)") + "\n\n" +
-                "**Email:** " + email + "\n\n" +
-                "**Report:** Artificial Intelligence Sample"
+          "@type": "MessageCard",
+          "@context": "http://schema.org/extensions",
+          "summary": "Question for a human trainer",
+          "themeColor": "118DFF",
+          "title": "Question for a human trainer",
+          "sections": [{
+            "facts": [
+              { "name": "Question", "value": pendingQuestion || "(not captured)" },
+              { "name": "Email", "value": email },
+              { "name": "Report", "value": "Artificial Intelligence Sample" }
+            ]
+          }]
         })
       })
       .then(function (r) {
