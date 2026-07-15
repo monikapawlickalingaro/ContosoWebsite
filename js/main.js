@@ -9,11 +9,11 @@
 
   const reportFrame = document.getElementById("report-frame");
 
-  /* ── 0. Intro video overlay ──
-     Browsers reliably block autoplay WITH sound, especially on a first
-     visit — so we don't fight that. The video always starts muted
-     (always allowed) and shows a visible "tap for sound" button; a
-     click is treated by the browser as consent to unmute. */
+ /* ── 0. Intro video overlay ──
+     Try to autoplay WITH sound first — works for returning visitors and
+     many browsers on a first visit too. If the browser blocks it, fall
+     back to muted autoplay with a visible "tap for sound" button, so the
+     video is never broken either way. */
 
   const videoOverlay = document.getElementById("video-overlay");
   const introVideo = document.getElementById("intro-video");
@@ -25,7 +25,7 @@
     introVideo.pause();
   }
 
-  if (videoOverlay && introVideo) {
+  if (videoOverlay && introVideo && videoClose && videoUnmute) {
     /* Uncomment to show the intro only once per browser:
     if (localStorage.getItem("reportTrainerIntroSeen")) {
       hideVideoOverlay();
@@ -43,14 +43,23 @@
       videoUnmute.hidden = true;
     });
 
-    /* Muted autoplay is reliably allowed by every major browser. */
+    /* Attempt 1: autoplay with sound. */
+    videoUnmute.hidden = true;
     introVideo.play().catch(function () {
-      /* Even muted autoplay can be blocked in rare cases (e.g. strict
-         embedded contexts) — if so, just show the paused frame with
-         the unmute button still visible; clicking it will start it. */
+      /* Blocked — fall back to muted autoplay and show the button. */
+      introVideo.muted = true;
+      videoUnmute.hidden = false;
+      introVideo.play().catch(function () {
+        /* Even muted autoplay can be blocked in rare cases — the button
+           stays visible so a click can still start it. */
+      });
     });
+  } else if (videoOverlay) {
+    console.warn(
+      "[Report Trainer] Video overlay markup incomplete — check that " +
+      "index.html has #intro-video, #video-close, and #video-unmute."
+    );
   }
-
 
   /* ── 1. Client tool: agent-driven report navigation ──
      Fill in the ReportSection IDs. How to get them: open the report in
