@@ -10,14 +10,15 @@
   const reportFrame = document.getElementById("report-frame");
 
   /* ── 0. Intro video overlay ──
-     Plays once on page load. Hides automatically when the video ends,
-     or immediately if the user clicks close. The "show only once per
-     browser" behaviour is commented out below — uncomment the two
-     marked lines to enable it. */
+     Browsers reliably block autoplay WITH sound, especially on a first
+     visit — so we don't fight that. The video always starts muted
+     (always allowed) and shows a visible "tap for sound" button; a
+     click is treated by the browser as consent to unmute. */
 
   const videoOverlay = document.getElementById("video-overlay");
   const introVideo = document.getElementById("intro-video");
   const videoClose = document.getElementById("video-close");
+  const videoUnmute = document.getElementById("video-unmute");
 
   function hideVideoOverlay() {
     videoOverlay.hidden = true;
@@ -36,14 +37,17 @@
     introVideo.addEventListener("ended", hideVideoOverlay);
     videoClose.addEventListener("click", hideVideoOverlay);
 
-    /* Autoplay with sound is often blocked by the browser. If it fails,
-       retry muted so the video still plays — better a silent intro than
-       none at all. */
+    videoUnmute.addEventListener("click", function () {
+      introVideo.muted = false;
+      introVideo.play().catch(function () {});
+      videoUnmute.hidden = true;
+    });
+
+    /* Muted autoplay is reliably allowed by every major browser. */
     introVideo.play().catch(function () {
-      introVideo.muted = true;
-      introVideo.play().catch(function () {
-        hideVideoOverlay();
-      });
+      /* Even muted autoplay can be blocked in rare cases (e.g. strict
+         embedded contexts) — if so, just show the paused frame with
+         the unmute button still visible; clicking it will start it. */
     });
   }
 
