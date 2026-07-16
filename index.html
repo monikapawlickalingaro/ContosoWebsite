@@ -52,6 +52,22 @@
     </div>
   </div>
 
+  <!-- ── INSPIRATION VIDEO (modal, opened by the agent's tool call) ── -->
+  <div class="modal-backdrop" id="inspiration-video" hidden>
+    <div class="modal modal-video" role="dialog" aria-modal="true">
+      <button class="modal-close" id="inspiration-video-close" title="Close">&times;</button>
+      <div class="video-embed">
+        <iframe id="inspiration-video-frame"
+                src=""
+                title="Inspiration video"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen>
+        </iframe>
+      </div>
+    </div>
+  </div>
+  
   <!-- Signed-in user badge (Azure Static Web Apps only) -->
   <div class="user-badge" id="agent-user" hidden>
     <span id="agent-user-name"></span> &middot; <a href="/logout">Sign out</a>
