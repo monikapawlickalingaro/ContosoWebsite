@@ -3,7 +3,8 @@
    This file wires up the client tools the agent can call:
      navigate_to_page        — switch the Power BI report page
      request_human_trainer   — open the escalation form
-     show_inspiration_video  — show a short inspiration video */
+     show_inspiration_video  — show a short inspiration video
+     open_report_link        -  open Report Link  */
 
 (function () {
   "use strict";
@@ -154,7 +155,20 @@
     if (e.key === "Escape" && !inspirationModal.hidden) closeInspirationVideo();
   });
 
-  /* ── 3. Client tool: escalate to a human trainer ──
+   /* ── 3. Client tool: open the report in Power BI (new tab) ──
+     The URL is hardcoded on purpose — same safety pattern as navigation
+     and inspiration videos: the agent triggers the action, it never
+     supplies or recites a URL itself. */
+
+  const REPORT_DIRECT_LINK =
+    "https://app.powerbi.com/groups/me/reports/d724f3b0-8c9e-454d-8c54-30a245b070ba/ReportSection76c409e0c333d60bb1e2?experience=power-bi";
+
+  function openReportLink() {
+    window.open(REPORT_DIRECT_LINK, "_blank", "noopener");
+    return "Done. The report has opened in a new browser tab.";
+  }
+   
+  /* ── 4. Client tool: escalate to a human trainer ──
      Set HANDOFF_WEBHOOK to the Power Automate flow endpoint. Left empty,
      the form still works and logs to the console. */
 
@@ -234,16 +248,17 @@
     setTimeout(closeHandoff, 2500);
   });
 
-  /* ── 4. Register the client tools when a call starts ── */
+  /* ── 5. Register the client tools when a call starts ── */
   window.addEventListener("elevenlabs-convai:call", function (event) {
     event.detail.config.clientTools = {
       navigate_to_page: navigateToPage,
       request_human_trainer: requestHumanTrainer,
-      show_inspiration_video: showInspirationVideo
+      show_inspiration_video: showInspirationVideo,
+      open_report_link: openReportLink       
     };
   });
 
-  /* ── 5. Signed-in user (Azure Static Web Apps only) ──
+  /* ── 6. Signed-in user (Azure Static Web Apps only) ──
      On GitHub Pages /.auth/me doesn't exist — fails silently, so the same
      code runs on both hosts. */
   fetch("/.auth/me")
@@ -256,7 +271,7 @@
     })
     .catch(function () { /* GitHub Pages — no auth endpoint, ignore */ });
 
-  /* ── 6. Widget load check ── */
+  /* ── 7. Widget load check ── */
   window.addEventListener("load", function () {
     setTimeout(function () {
       if (!(window.customElements && window.customElements.get("elevenlabs-convai"))) {
