@@ -6,22 +6,17 @@
      show_inspiration_video  — show a short inspiration video
      open_report_link        — open the full report in a new tab
 
-   ARCHITECTURE NOTE (2026-07): the Teams webhook call no longer happens
-   here. It now lives as a server-side "Webhook Tool" (escalate_to_human_trainer)
-   configured directly on the ElevenLabs agent, with the Power Automate URL
-   and auth secret stored there — never shipped to the browser.
-   This file's job for escalation is now only: collect the email, then hand
-   it back to the agent via sendContextualUpdate() so the agent can call
-   that server-side tool itself. */
+   ARCHITECTURE NOTE (2026-07): escalation reaches the server-side
+   "escalate_to_human_trainer" Webhook Tool through the standard client-tool
+   return value — request_human_trainer's Promise stays open until the user
+   submits the form, then resolves with the details. (An earlier version
+   tried widget.sendContextualUpdate() as the bridge instead; that method
+   proved fragile across widget versions and was replaced.) */
 
 (function () {
   "use strict";
 
   const reportFrame = document.getElementById("report-frame");
-
-  /* Reference to the <elevenlabs-convai> element, captured the moment a
-     call starts. Needed so we can call widget.sendContextualUpdate(). */
-  let widgetEl = null;
 
   /* ── 0. Intro video overlay ──
      Try to autoplay WITH sound first — works for returning visitors and
@@ -72,12 +67,11 @@
      Power BI Service, click through each page, and copy the
      "ReportSection..." part from the browser URL. */
 
-const REPORT_PAGES = {
-  welcome:            "ReportSectionefb795dec4c1d80f0f8c",
-  key_influencers:    "ReportSection76c409e0c333d60bb1e2",
-  decomposition_tree: "ReportSectionacd41c847407a998c130",
-  anomaly_detection:  "ReportSection909ea50e7939156807d6"
-};
+  const REPORT_PAGES = {
+    key_influencers:    "ReportSection76c409e0c333d60bb1e2",
+    decomposition_tree: "ReportSectionacd41c847407a998c130",
+    anomaly_detection:  "ReportSection909ea50e7939156807d6"
+  };
 
   function navigateToPage(params) {
     const pageId = REPORT_PAGES[params.page];
@@ -166,8 +160,8 @@ const REPORT_PAGES = {
      and inspiration videos: the agent triggers the action, it never
      supplies or recites a URL itself. */
 
-const REPORT_DIRECT_LINK =
-  "https://app.powerbi.com/groups/d7776f58-d95a-4007-8ca9-1df20a245a8f/reports/e8176c05-e6b3-4de6-bcfc-38ac625e1e13/ReportSection76c409e0c333d60bb1e2?experience=power-bi";
+  const REPORT_DIRECT_LINK =
+    "https://app.powerbi.com/groups/me/reports/d724f3b0-8c9e-454d-8c54-30a245b070ba/ReportSection76c409e0c333d60bb1e2?experience=power-bi";
 
   function openReportLink() {
     window.open(REPORT_DIRECT_LINK, "_blank", "noopener");
@@ -175,12 +169,14 @@ const REPORT_DIRECT_LINK =
   }
 
   /* ── 3. Client tool: escalate to a human trainer ──
-     This tool ONLY opens the on-screen form and captures the question.
-     It no longer sends anything itself — no webhook URL, no secret here.
-     Once the user submits their email, we push it back into the
-     conversation via sendContextualUpdate(); the agent then calls its own
-     server-side "escalate_to_human_trainer" webhook tool to actually notify
-     Teams. */
+     This tool opens the on-screen form and then WAITS — the returned
+     Promise does not resolve until the user actually submits their email
+     (or closes the form). This mirrors navigate_to_page's pattern: the
+     tool's return value is the reliable channel back to the agent, not
+     the widget's sendContextualUpdate() method (which proved fragile
+     across widget versions). Configure this tool's execution mode as
+     ASYNCHRONOUS in the ElevenLabs dashboard so the agent isn't blocked
+     while waiting. */
 
   const handoff = document.getElementById("handoff");
   const handoffQuestion = document.getElementById("handoff-question");
@@ -190,6 +186,15 @@ const REPORT_DIRECT_LINK =
   const handoffClose = document.getElementById("handoff-close");
 
   let pendingQuestion = "";
+  let resolveEscalation = null;   /* holds the Promise's resolve function */
+
+  function settleEscalation(message) {
+    if (resolveEscalation) {
+      const r = resolveEscalation;
+      resolveEscalation = null;
+      r(message);
+    }
+  }
 
   function requestHumanTrainer(params) {
     pendingQuestion = params.question || "";
@@ -201,11 +206,21 @@ const REPORT_DIRECT_LINK =
     handoffEmail.disabled = false;
     handoff.hidden = false;
     handoffEmail.focus();
-    return "Done. A contact form is now open on screen — ask the user to " +
-           "enter their email there.";
+
+    return new Promise(function (resolve) {
+      resolveEscalation = resolve;
+    });
   }
 
-  function closeHandoff() { handoff.hidden = true; }
+  function closeHandoff() {
+    handoff.hidden = true;
+    /* If the user closes without submitting, settle the promise anyway
+       so this tool call never hangs indefinitely. */
+    settleEscalation(
+      "The user closed the form without submitting an email. Do not " +
+      "call escalate_to_human_trainer — briefly acknowledge and continue."
+    );
+  }
 
   handoffClose.addEventListener("click", closeHandoff);
   handoff.addEventListener("click", function (e) {
@@ -232,50 +247,27 @@ const REPORT_DIRECT_LINK =
       at: new Date().toISOString()
     };
 
-    /* Every escalation is a gap in the knowledge base — worth logging. */
     console.info("[Report Trainer] Escalation submitted:", payload);
-
-    /* Hand the email back to the agent instead of calling the webhook
-       ourselves. sendContextualUpdate() is silent — it won't make the
-       agent speak on its own — but the agent's next turn (or its own
-       judgement) can act on it and call escalate_to_human_trainer with
-       the full payload.
-       NOTE: sendContextualUpdate() must exist on the widget element for
-       this to work. If your installed @elevenlabs/convai-widget-embed
-       version doesn't expose it, this will throw and we fall back to
-       just logging — nothing breaks, but Teams won't get notified until
-       this is fixed. Test this path first. */
-    try {
-      if (widgetEl && typeof widgetEl.sendContextualUpdate === "function") {
-        widgetEl.sendContextualUpdate(
-          "The user submitted the escalation form. " +
-          "Question: \"" + payload.question + "\". " +
-          "Email: " + payload.email + ". " +
-          "Report: " + payload.report + ". " +
-          "Call escalate_to_human_trainer now with these details."
-        );
-      } else {
-        console.error(
-          "[Report Trainer] widget.sendContextualUpdate is not available — " +
-          "the agent was not notified. Check the ElevenLabs widget version."
-        );
-      }
-    } catch (err) {
-      console.error("[Report Trainer] sendContextualUpdate failed:", err);
-    }
 
     handoffSend.disabled = true;
     handoffEmail.disabled = true;
     handoffDone.hidden = false;
-    setTimeout(closeHandoff, 2500);
+
+    /* Resolve the held-open tool call now — this is what reaches the
+       agent, reliably, regardless of widget version. */
+    settleEscalation(
+      "The user submitted the escalation form. " +
+      "Question: \"" + payload.question + "\". " +
+      "Email: " + payload.email + ". " +
+      "Report: " + payload.report + ". " +
+      "Call escalate_to_human_trainer now with these details."
+    );
+
+    setTimeout(function () { handoff.hidden = true; }, 2500);
   });
 
   /* ── 4. Register the client tools when a call starts ── */
   window.addEventListener("elevenlabs-convai:call", function (event) {
-    /* Capture the widget element so requestHumanTrainer's handler can
-       reach it later via sendContextualUpdate(). */
-    widgetEl = event.target;
-
     event.detail.config.clientTools = {
       navigate_to_page: navigateToPage,
       request_human_trainer: requestHumanTrainer,
