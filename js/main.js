@@ -161,7 +161,7 @@
      supplies or recites a URL itself. */
 
   const REPORT_DIRECT_LINK =
-    "https://app.powerbi.com/reportEmbed?reportId=e8176c05-e6b3-4de6-bcfc-38ac625e1e13&autoAuth=true&ctid=2ee548e1-6be8-4729-b86e-f482e29d2c9f";
+    "https://app.powerbi.com/groups/d7776f58-d95a-4007-8ca9-1df20a245a8f/reports/e8176c05-e6b3-4de6-bcfc-38ac625e1e13/efb795dec4c1d80f0f8c?experience=power-bi";
 
   function openReportLink() {
     window.open(REPORT_DIRECT_LINK, "_blank", "noopener");
