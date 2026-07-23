@@ -169,14 +169,21 @@
   }
 
   /* ── 3. Client tool: escalate to a human trainer ──
-     This tool opens the on-screen form and then WAITS — the returned
-     Promise does not resolve until the user actually submits their email
-     (or closes the form). This mirrors navigate_to_page's pattern: the
-     tool's return value is the reliable channel back to the agent, not
-     the widget's sendContextualUpdate() method (which proved fragile
-     across widget versions). Configure this tool's execution mode as
-     ASYNCHRONOUS in the ElevenLabs dashboard so the agent isn't blocked
-     while waiting. */
+     TEMPORARY REVERT (2026-07, day of demo): back to a direct fetch()
+     from the browser, bypassing the server-side "escalate_to_human_trainer"
+     Webhook Tool — that path was reaching Power Automate's trigger (the
+     URL is confirmed valid and live) but never resulted in a run, for a
+     reason not yet diagnosed. This direct fetch uses the exact same
+     trigger URL and is confirmed reachable.
+
+     SECURITY NOTE: this puts the Power Automate URL (with its access
+     secret) back into public client-side code. Acceptable for tonight's
+     demo only. AFTER THE DEMO: rotate this URL in Power Automate (delete
+     and re-add the trigger) and return to the Webhook Tool architecture
+     once the ElevenLabs → Power Automate issue is diagnosed. */
+
+  const HANDOFF_WEBHOOK =
+    "https://default2ee548e16be84729b86ef482e29d2c.9f.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/451e4aab07094a5ba18a85afd0a8085d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=t-qqVgWweRwYRrjYD0tI4Ipf-Da7W4eKc2bO5MNOzlk";
 
   const handoff = document.getElementById("handoff");
   const handoffQuestion = document.getElementById("handoff-question");
@@ -186,15 +193,6 @@
   const handoffClose = document.getElementById("handoff-close");
 
   let pendingQuestion = "";
-  let resolveEscalation = null;   /* holds the Promise's resolve function */
-
-  function settleEscalation(message) {
-    if (resolveEscalation) {
-      const r = resolveEscalation;
-      resolveEscalation = null;
-      r(message);
-    }
-  }
 
   function requestHumanTrainer(params) {
     pendingQuestion = params.question || "";
@@ -206,25 +204,15 @@
     handoffEmail.disabled = false;
     handoff.hidden = false;
     handoffEmail.focus();
-
-    return new Promise(function (resolve) {
-      resolveEscalation = resolve;
-    });
+    return "Done. A contact form is now open on screen — ask the user to " +
+           "enter their email there.";
   }
 
-  function closeHandoff() {
-    handoff.hidden = true;
-    /* If the user closes without submitting, settle the promise anyway
-       so this tool call never hangs indefinitely. */
-    settleEscalation(
-      "The user closed the form without submitting an email. Do not " +
-      "call escalate_to_human_trainer — briefly acknowledge and continue."
-    );
-  }
+  function closeHandoff() { handoff.hidden = true; }
 
   handoffClose.addEventListener("click", closeHandoff);
   handoff.addEventListener("click", function (e) {
-    if (e.target === handoff) closeHandoff();   /* click outside the card */
+    if (e.target === handoff) closeHandoff();
   });
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") {
@@ -243,27 +231,27 @@
     const payload = {
       question: pendingQuestion || "(not captured)",
       email: email,
-      report: "Artificial Intelligence Sample",
-      at: new Date().toISOString()
+      report: "Artificial Intelligence Sample"
     };
 
     console.info("[Report Trainer] Escalation submitted:", payload);
 
+    fetch(HANDOFF_WEBHOOK, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+    .then(function (r) {
+      console.info("[Report Trainer] Webhook response:", r.status, r.statusText);
+    })
+    .catch(function (err) {
+      console.error("[Report Trainer] Webhook failed:", err);
+    });
+
     handoffSend.disabled = true;
     handoffEmail.disabled = true;
     handoffDone.hidden = false;
-
-    /* Resolve the held-open tool call now — this is what reaches the
-       agent, reliably, regardless of widget version. */
-    settleEscalation(
-      "The user submitted the escalation form. " +
-      "Question: \"" + payload.question + "\". " +
-      "Email: " + payload.email + ". " +
-      "Report: " + payload.report + ". " +
-      "Call escalate_to_human_trainer now with these details."
-    );
-
-    setTimeout(function () { handoff.hidden = true; }, 2500);
+    setTimeout(closeHandoff, 2500);
   });
 
   /* ── 4. Register the client tools when a call starts ── */
