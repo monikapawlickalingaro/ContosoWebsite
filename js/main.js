@@ -72,11 +72,12 @@
      Power BI Service, click through each page, and copy the
      "ReportSection..." part from the browser URL. */
 
-  const REPORT_PAGES = {
-    key_influencers:    "ReportSection76c409e0c333d60bb1e2",
-    decomposition_tree: "ReportSectionacd41c847407a998c130",
-    anomaly_detection:  "ReportSection909ea50e7939156807d6"
-  };
+const REPORT_PAGES = {
+  welcome:            "ReportSectionefb795dec4c1d80f0f8c",
+  key_influencers:    "ReportSection76c409e0c333d60bb1e2",
+  decomposition_tree: "ReportSectionacd41c847407a998c130",
+  anomaly_detection:  "ReportSection909ea50e7939156807d6"
+};
 
   function navigateToPage(params) {
     const pageId = REPORT_PAGES[params.page];
@@ -165,8 +166,8 @@
      and inspiration videos: the agent triggers the action, it never
      supplies or recites a URL itself. */
 
-  const REPORT_DIRECT_LINK =
-    "https://app.powerbi.com/groups/me/reports/d724f3b0-8c9e-454d-8c54-30a245b070ba/ReportSection76c409e0c333d60bb1e2?experience=power-bi";
+const REPORT_DIRECT_LINK =
+  "https://app.powerbi.com/groups/d7776f58-d95a-4007-8ca9-1df20a245a8f/reports/e8176c05-e6b3-4de6-bcfc-38ac625e1e13/ReportSection76c409e0c333d60bb1e2?experience=power-bi";
 
   function openReportLink() {
     window.open(REPORT_DIRECT_LINK, "_blank", "noopener");
