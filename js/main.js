@@ -4,12 +4,24 @@
      navigate_to_page        — switch the Power BI report page
      request_human_trainer   — open the escalation form
      show_inspiration_video  — show a short inspiration video
-     open_report_link        -  open Report Link  */
+     open_report_link        — open the full report in a new tab
+
+   ARCHITECTURE NOTE (2026-07): the Teams webhook call no longer happens
+   here. It now lives as a server-side "Webhook Tool" (escalate_to_human_trainer)
+   configured directly on the ElevenLabs agent, with the Power Automate URL
+   and auth secret stored there — never shipped to the browser.
+   This file's job for escalation is now only: collect the email, then hand
+   it back to the agent via sendContextualUpdate() so the agent can call
+   that server-side tool itself. */
 
 (function () {
   "use strict";
 
   const reportFrame = document.getElementById("report-frame");
+
+  /* Reference to the <elevenlabs-convai> element, captured the moment a
+     call starts. Needed so we can call widget.sendContextualUpdate(). */
+  let widgetEl = null;
 
   /* ── 0. Intro video overlay ──
      Try to autoplay WITH sound first — works for returning visitors and
@@ -28,14 +40,6 @@
   }
 
   if (videoOverlay && introVideo && videoClose && videoUnmute) {
-    /* Uncomment to show the intro only once per browser:
-    if (localStorage.getItem("reportTrainerIntroSeen")) {
-      hideVideoOverlay();
-    } else {
-      localStorage.setItem("reportTrainerIntroSeen", "true");
-    }
-    */
-
     introVideo.addEventListener("ended", hideVideoOverlay);
     videoClose.addEventListener("click", hideVideoOverlay);
 
@@ -147,32 +151,35 @@
     inspirationFrame.src = "";   /* clears the iframe so playback stops */
   }
 
-  inspirationClose.addEventListener("click", closeInspirationVideo);
-  inspirationModal.addEventListener("click", function (e) {
-    if (e.target === inspirationModal) closeInspirationVideo();
-  });
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && !inspirationModal.hidden) closeInspirationVideo();
-  });
+  if (inspirationClose) {
+    inspirationClose.addEventListener("click", closeInspirationVideo);
+  }
+  if (inspirationModal) {
+    inspirationModal.addEventListener("click", function (e) {
+      if (e.target === inspirationModal) closeInspirationVideo();
+    });
+  }
 
-   /* ── 3. Client tool: open the report in Power BI (new tab) ──
+  /* ── 2b. Client tool: open the report in Power BI (new tab) ──
      The URL is hardcoded on purpose — same safety pattern as navigation
      and inspiration videos: the agent triggers the action, it never
      supplies or recites a URL itself. */
 
   const REPORT_DIRECT_LINK =
-    "https://app.powerbi.com/groups/d7776f58-d95a-4007-8ca9-1df20a245a8f/reports/e8176c05-e6b3-4de6-bcfc-38ac625e1e13/efb795dec4c1d80f0f8c?experience=power-bi";
+    "https://app.powerbi.com/groups/me/reports/d724f3b0-8c9e-454d-8c54-30a245b070ba/ReportSection76c409e0c333d60bb1e2?experience=power-bi";
 
   function openReportLink() {
     window.open(REPORT_DIRECT_LINK, "_blank", "noopener");
     return "Done. The report has opened in a new browser tab.";
   }
-   
-  /* ── 4. Client tool: escalate to a human trainer ──
-     Set HANDOFF_WEBHOOK to the Power Automate flow endpoint. Left empty,
-     the form still works and logs to the console. */
 
-  const HANDOFF_WEBHOOK = "https://default2ee548e16be84729b86ef482e29d2c.9f.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/451e4aab07094a5ba18a85afd0a8085d/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=t-qqVgWweRwYRrjYD0tI4Ipf-Da7W4eKc2bO5MNOzlk";
+  /* ── 3. Client tool: escalate to a human trainer ──
+     This tool ONLY opens the on-screen form and captures the question.
+     It no longer sends anything itself — no webhook URL, no secret here.
+     Once the user submits their email, we push it back into the
+     conversation via sendContextualUpdate(); the agent then calls its own
+     server-side "escalate_to_human_trainer" webhook tool to actually notify
+     Teams. */
 
   const handoff = document.getElementById("handoff");
   const handoffQuestion = document.getElementById("handoff-question");
@@ -204,7 +211,10 @@
     if (e.target === handoff) closeHandoff();   /* click outside the card */
   });
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && !handoff.hidden) closeHandoff();
+    if (e.key === "Escape") {
+      closeHandoff();
+      closeInspirationVideo();
+    }
   });
 
   handoffSend.addEventListener("click", function () {
@@ -215,31 +225,42 @@
     }
 
     const payload = {
-      question: pendingQuestion,
+      question: pendingQuestion || "(not captured)",
       email: email,
       report: "Artificial Intelligence Sample",
       at: new Date().toISOString()
     };
 
     /* Every escalation is a gap in the knowledge base — worth logging. */
-    console.info("[Report Trainer] Escalation to human trainer:", payload);
+    console.info("[Report Trainer] Escalation submitted:", payload);
 
-    if (HANDOFF_WEBHOOK) {
-      fetch(HANDOFF_WEBHOOK, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: pendingQuestion || "(not captured)",
-          email: email,
-          report: "Artificial Intelligence Sample"
-        })
-      })
-      .then(function (r) {
-        console.info("[Report Trainer] Webhook response:", r.status, r.statusText);
-      })
-      .catch(function (err) {
-        console.error("[Report Trainer] Webhook failed:", err);
-      });
+    /* Hand the email back to the agent instead of calling the webhook
+       ourselves. sendContextualUpdate() is silent — it won't make the
+       agent speak on its own — but the agent's next turn (or its own
+       judgement) can act on it and call escalate_to_human_trainer with
+       the full payload.
+       NOTE: sendContextualUpdate() must exist on the widget element for
+       this to work. If your installed @elevenlabs/convai-widget-embed
+       version doesn't expose it, this will throw and we fall back to
+       just logging — nothing breaks, but Teams won't get notified until
+       this is fixed. Test this path first. */
+    try {
+      if (widgetEl && typeof widgetEl.sendContextualUpdate === "function") {
+        widgetEl.sendContextualUpdate(
+          "The user submitted the escalation form. " +
+          "Question: \"" + payload.question + "\". " +
+          "Email: " + payload.email + ". " +
+          "Report: " + payload.report + ". " +
+          "Call escalate_to_human_trainer now with these details."
+        );
+      } else {
+        console.error(
+          "[Report Trainer] widget.sendContextualUpdate is not available — " +
+          "the agent was not notified. Check the ElevenLabs widget version."
+        );
+      }
+    } catch (err) {
+      console.error("[Report Trainer] sendContextualUpdate failed:", err);
     }
 
     handoffSend.disabled = true;
@@ -248,17 +269,21 @@
     setTimeout(closeHandoff, 2500);
   });
 
-  /* ── 5. Register the client tools when a call starts ── */
+  /* ── 4. Register the client tools when a call starts ── */
   window.addEventListener("elevenlabs-convai:call", function (event) {
+    /* Capture the widget element so requestHumanTrainer's handler can
+       reach it later via sendContextualUpdate(). */
+    widgetEl = event.target;
+
     event.detail.config.clientTools = {
       navigate_to_page: navigateToPage,
       request_human_trainer: requestHumanTrainer,
       show_inspiration_video: showInspirationVideo,
-      open_report_link: openReportLink       
+      open_report_link: openReportLink
     };
   });
 
-  /* ── 6. Signed-in user (Azure Static Web Apps only) ──
+  /* ── 5. Signed-in user (Azure Static Web Apps only) ──
      On GitHub Pages /.auth/me doesn't exist — fails silently, so the same
      code runs on both hosts. */
   fetch("/.auth/me")
@@ -271,7 +296,7 @@
     })
     .catch(function () { /* GitHub Pages — no auth endpoint, ignore */ });
 
-  /* ── 7. Widget load check ── */
+  /* ── 6. Widget load check ── */
   window.addEventListener("load", function () {
     setTimeout(function () {
       if (!(window.customElements && window.customElements.get("elevenlabs-convai"))) {
